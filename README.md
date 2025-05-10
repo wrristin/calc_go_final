@@ -1,63 +1,62 @@
-# Распределённый вычислитель арифметических выражений
-Этот проект представляет собой веб-сервис для вычисления арифметических выражений. Пользователь отправляет выражение через HTTP-запрос, а сервис возвращает результат. 
-## Back-end часть
-### Состоит из 2-ух элементов:
-- Сервер, который принимает арифметическое выражение, переводит его в набор последовательных задач и обеспечивает порядок их выполнения. (Оркестратор)
-- Вычислитель, который может получить от оркестратора задачу, выполнить его и вернуть серверу результат. (Агент)
-## Как пользоваться проектом
-1. Установите переменные среды
-Для линукса/macOs:
-```bash
-   export TIME_ADDITION_MS=1000
-   export TIME_SUBTRACTION_MS=1000
-   export TIME_MULTIPLICATIONS_MS=2000
-   export TIME_DIVISIONS_MS=2000
-   export COMPUTING_POWER=4
-   
+# Распределенный вычислитель арифметических выражений. Финал
+Проект представляет из себя распределённый вычислитель арифметических выражений. Для регистрации пользователь отправляет запрос POST /api/v1/register { "login": , "password": }
+В ответ получает 200+OK (в случае успеха)
+В противном случае - ошибка.
+Для входа пользователь отправляет запрос POST /api/v1/login { "login": , "password": }
+В ответ получает 200+OK и JWT токен для последующей авторизации.
+## Запуск проекта:
+- Для начала вам нужно клонировать репозиторий.
 ```
-Для Windows в командной строке cmd:
-```bash
-   set TIME_ADDITION_MS=1000
-   set TIME_SUBTRACTION_MS=1000
-   set TIME_MULTIPLICATIONS_MS=2000
-   set TIME_DIVISIONS_MS=2000
-   set COMPUTING_POWER=4
+git clone https://github.com/wrristin/calc_go_final.git
+cd calc_service
 ```
-2. Установите зависимости:
+- Далее вам нужно установить зависимости.
+Windows: Скачайте protoc (выберите protoc-*.zip), распакуйте и добавьте bin/ в PATH.
+- Плагины для Go:
 ```
-go mod download
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 ```
-3. Запустите агент и оркестратор в разных терминалах
-Запуск оркестратора:
+- После этого вам потребуется установить Установить компилятор C (требуется для SQLite)
+Windows: Установите TDM-GCC x86_64 (выберите 64-битную версию).
+Примечание: Обязательно добавьте путь к 64-битному GCC в переменную окружения PATH:
+Например: C:\Program Files\mingw64\bin или C:\TDM-GCC-64\bin.
+- После этого проверьте версию GCC
 ```
-go run ./cmd/orchestrator/main.go
+gcc --version
 ```
-Запуск агента:
+- Запустите оркестратор
+Включите CGO (обязательно для Windows)
 ```
-go run ./cmd/agent/main.go
+$env:CGO_ENABLED = "1"  (Вписывайте данную команду в PowerShell)
+go run cmd/orchestrator/main.go
 ```
-## Примеры использования
-### Успешный запрос
+- Запустите агент
 ```
-curl --location 'localhost:8080/api/v1/calculate' \
---header 'Content-Type: application/json' \
---data '{
-  "expression": "2+2*2"
-}'
+$env:CGO_ENABLED = "1" 
+go run cmd/agent/main.go
 ```
-### Ошибка: неверное выражение
+- Регистрация пользвателя:
 ```
-curl --location 'localhost:8080/api/v1/calculate' \
---header 'Content-Type: application/json' \
---data '{
-  "expression": "2+*2"
-}'
+curl -X POST http://localhost:8080/api/v1/register \
+  -H "Content-Type: application/json" \
+  -d '{"login": "user", "password": "pass"}'
+  ```
+  - Авторизация (получение токена):
 ```
-### Получение списка выражений
+curl -X POST http://localhost:8080/api/v1/login \
+  -H "Content-Type: application/json" \
+  -d '{"login": "user", "password": "pass"}'
+  ```
+  - Добавить выражение:
 ```
-curl --location 'localhost:8080/api/v1/expressions'
-```
-### Получение выражения по ID
-```
-curl --location 'localhost:8080/api/v1/expressions/id'
-```
+  curl -X POST http://localhost:8080/api/v1/calculate \
+  -H "Authorization: Bearer ВАШ_ТОКЕН" \
+  -H "Content-Type: application/json" \
+  -d '{"expression": "2+2*2"}'
+  ```
+  - Проверить статус выражения:
+ ```
+curl http://localhost:8080/api/v1/expressions \
+  -H "Authorization: Bearer ВАШ_ТОКЕН"
+  ```
