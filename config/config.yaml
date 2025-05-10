@@ -1,0 +1,7 @@
+server:
+  http_port: ":8080"
+  grpc_port: ":50051"
+database:
+  path: "calc.db"
+jwt:
+  secret: "my_ultra_secure_jwt_secret_key"
